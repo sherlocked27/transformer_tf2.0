@@ -222,6 +222,7 @@ class Transformer(tf.keras.layers.Layer):
 
 
 if __name__ == '__main__':
+    # Testing for decoder
     mask = 1 - tf.linalg.band_part(tf.ones((3, 3)), -1, 0)
     a = Decoder(8, 2, 16, 0.1, mask)
     b = tf.random.normal([2, 4, 8], 0, 1, tf.float32, seed=1)
