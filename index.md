@@ -14,7 +14,7 @@ Implementation of the ***Transformer*** model from the paper:
 
 
 
-![Transformer model](./attention.png)
+![Transformer model](https://raw.githubusercontent.com/sherlocked27/transformer_tf2.0/gh-pages/attention.png)
 
 
 
