@@ -14,7 +14,7 @@ Implementation of the ***Transformer*** model from the paper:
 
 
 
-![Transformer model](./images/attention.png)
+![Transformer model](./attention.png)
 
 
 
