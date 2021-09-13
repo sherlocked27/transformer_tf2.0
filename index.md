@@ -1,37 +1,21 @@
-## Welcome to GitHub Pages
+# Transformer (Tensorflow 2.0 implementation)
 
-You can use the [editor on GitHub](https://github.com/sherlocked27/transformer_tf2.0/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
-### Markdown
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Implementation of the ***Transformer*** model from the paper:
 
-```markdown
-Syntax highlighted code block
+> Ashish Vaswani, et al. ["Attention is all you need."](https://arxiv.org/pdf/1706.03762.pdf) 
 
-# Header 1
-## Header 2
-### Header 3
 
-- Bulleted
-- List
 
-1. Numbered
-2. List
+## Architecture
 
-**Bold** and _Italic_ and `Code` text
 
-[Link](url) and ![Image](src)
-```
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
 
-### Jekyll Themes
+![Transformer model](./images/attention.png)
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/sherlocked27/transformer_tf2.0/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
 
-### Support or Contact
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+Image credit - https://github.com/lilianweng/transformer-tensorflow
