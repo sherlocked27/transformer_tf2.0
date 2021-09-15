@@ -188,6 +188,20 @@ class Mask:
         sequences = tf.cast(tf.math.equal(sequences, 0), tf.float64)
         return sequences[:, tf.newaxis, tf.newaxis, :]
 
+    def create_all_mask(cls, seq_len, encoder_sequences, decoder_sequence):
+        """
+        For look ahead mask tf.maximum is important as the actual length might be 
+        smaller than the sequence length and we dont want padding to influence our attention criteria.
+        For the very same reason we do masking for encoder and decoder 2nd attention layer too 
+        """
+        encoder_padding_mask = cls.padding_mask(encoder_sequences)
+        decoder_padding_mask = cls.padding_mask(decoder_sequence)
+
+        look_ahead_mask = tf.maximum(cls.look_ahead_mask(seq_len=seq_len),
+                                     cls.padding_mask(sequences=decoder_sequence))
+
+        return encoder_padding_mask, look_ahead_mask, decoder_padding_mask
+
 
 class Transformer(tf.keras.layers.Layer):
     def __init__(self,  vocab_size, d_model, n_h, d_ff, dropout, encoder_count, decoder_count, ** kwargs):
@@ -219,13 +233,3 @@ class Transformer(tf.keras.layers.Layer):
             decoder_input = decoder_output
 
         return self.linear(decoder_output)
-
-
-if __name__ == '__main__':
-    # Testing for decoder
-    mask = 1 - tf.linalg.band_part(tf.ones((3, 3)), -1, 0)
-    a = Decoder(8, 2, 16, 0.1, mask)
-    b = tf.random.normal([2, 4, 8], 0, 1, tf.float32, seed=1)
-    c = tf.random.normal([2, 3, 8], 0, 1, tf.float32, seed=1)
-    d = a(b, c, training=True)
-    ic(d)
