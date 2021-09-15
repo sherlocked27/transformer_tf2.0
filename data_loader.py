@@ -34,8 +34,9 @@ class Data_Loader:
     }
     MAX_SEQ_LENGTH = 100
     DATA_LIMIT = None
+    BATCH_SIZE = None
 
-    def __init__(self, dir, dataset_name, data_limit) -> None:
+    def __init__(self, dir, dataset_name, data_limit, batch_size) -> None:
         self.DIR = dir
         self.DATASET = dataset_name
 
@@ -45,6 +46,7 @@ class Data_Loader:
             self.DIR, self.CONFIG[dataset_name]['train_files'][1])
         self.BPE_VOCAB_SIZE = 32000
         self.DATA_LIMIT = data_limit
+        self.BATCH_SIZE = batch_size
 
     def load(self):
         ic('#1 download data')
@@ -92,7 +94,6 @@ class Data_Loader:
             target_sequence_trained,
             target_sequence_val
         )
-
         return train_dataset, val_dataset
 
     def download_dataset(self):
@@ -159,6 +160,7 @@ class Data_Loader:
         new_target_sequences = []
         i = 0
         for source_sent, target_sent in zip(source_sequences, target_sequences):
+            # Not include sentences that are above MAX SEQ length
             if(len(source_sent) > self.MAX_SEQ_LENGTH or len(target_sent) > self.MAX_SEQ_LENGTH):
                 i += 1
                 continue
@@ -170,8 +172,15 @@ class Data_Loader:
         target_sequences_padded = tf.keras.preprocessing.sequence.pad_sequences(
             new_target_sequences, padding='post', maxlen=self.MAX_SEQ_LENGTH)
 
-        return 0
+        dataset = tf.data.Dataset.from_tensor_slices(
+            (source_sequences_padded, target_sequences_padded))
+
+        dataset = dataset.padded_batch(self.BATCH_SIZE).prefetch(
+            tf.data.experimental.AUTOTUNE)
+
+        return dataset
 
 
-a = Data_Loader(os.getcwd() + '/data', 'wmt14/en-de', 10000)
+a = Data_Loader(os.getcwd() + '/data', 'wmt14/en-de',
+                data_limit=10000, batch_size=16)
 a.load()
