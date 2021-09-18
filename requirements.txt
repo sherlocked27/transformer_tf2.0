@@ -1,0 +1,5 @@
+tensorflow==2.6.0
+sentencepiece==0.1.96
+numpy==1.19.5
+scikit_learn==0.24.2
+icecream==2.1.1

@@ -1,6 +1,4 @@
 import numpy as np
-from icecream import ic
-from six import class_types
 import tensorflow as tf
 
 
