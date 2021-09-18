@@ -9,7 +9,8 @@ CHECKPOINT_DIR = "./checkpoints"
 D_MODEL = 200  # Dimension of embedding for model
 VOCAB_SIZE = 32000
 BATCH_SIZE = 32
-DATA_LIMIT = 10000
+# Take this many sentences from the data for the whole training and validation
+DATA_LIMIT = 20000
 D_FF = 400
 DROPOUT = 0.1
 ENCODER_COUNT = 4
@@ -102,7 +103,7 @@ def trainer(dataloader, val_dataloader, transformer, optimiser, loss_func):
                     int(checkpoint.step), save_path))
                 print("loss {:1.2f}".format(loss_value.numpy()))
 
-        print("{} | Epoch: {} Loss:{}, Accuracy: {}, time: {} sec".format(
+        print("{} | After Epoch: {} Loss:{}, Accuracy: {}, time: {} sec".format(
             datetime.datetime.now(), epoch, train_loss.result(), train_accuracy.result(),
             time.time() - start_time
         ))
