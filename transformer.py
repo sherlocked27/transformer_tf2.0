@@ -1,5 +1,6 @@
 import numpy as np
 from icecream import ic
+from six import class_types
 import tensorflow as tf
 
 
@@ -12,12 +13,13 @@ class EmbeddingLayer(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         max_length = inputs.shape[1]
-        emb = self.embedding(inputs)
+        emb = self.embedding(inputs) * \
+            tf.sqrt(tf.cast(self.d_model, dtype=tf.float32))
         # [[1],[2]] + np.expand_dims([1], axis=0) = array([[2],[3]])
         emb += self.positionalEncoding(max_length, self.d_model)
         return emb
 
-    def positionalEncoding(max_len, d_emb):
+    def positionalEncoding(self, max_len, d_emb):
         pe = np.array([
             [pos / (10000 ** ((2 * i)/d_emb)) for i in range(d_emb)]
             if pos != 0 else np.zeros(d_emb)
@@ -26,7 +28,7 @@ class EmbeddingLayer(tf.keras.layers.Layer):
         pe[:, ::2] = np.sin(pe[:, ::2])
         pe[:, 1::2] = np.cos(pe[:, 1::2])
         pe = np.expand_dims(pe, axis=0)  # To incoperate the batch size
-        return pe
+        return tf.cast(pe, dtype=tf.float32)
 
 
 class ScaledSingleAttention(tf.keras.layers.Layer):
@@ -72,7 +74,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         atten_output, attention_weights = self.ssa(
             query_h, key_h, value_h, mask=mask)
-        ic(atten_output.shape)
         concatenated = tf.reshape(tf.transpose(atten_output, [0, 2, 1, 3]), [
                                   batch_size, -1, self.d_h])
         output = self.dense(concatenated)
@@ -81,7 +82,6 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
     def reshape_for_multihead(self, vector, batch_size, dim_att):
         new_vector = tf.reshape(vector, [batch_size, -1, self.n_h, dim_att])
-        ic(new_vector.shape)
         return tf.transpose(new_vector, [0, 2, 1, 3])
 
 
@@ -95,7 +95,6 @@ class PositionFeedForward(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         input = self.d1(inputs)
-        ic(input.shape)
         output = self.d2(input)
         return output
 
@@ -115,7 +114,6 @@ class Encoder(tf.keras.layers.Layer):
         # Self Attention
         attended_output, attention_weights = self.mha(
             inputs, inputs, inputs, mask=padding_mask)
-        ic(attended_output.shape)
         attended_output_drop = self.dropout_1(
             attended_output, training=training)
         attended_output_norm = self.layer_norm_1(attended_output_drop+inputs)
@@ -177,30 +175,34 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class Mask:
+    @classmethod
     def look_ahead_mask(cls, seq_len):
-        return 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0)
+        mask = tf.cast(
+            1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), -1, 0), tf.float32)
+        return mask
 
+    @classmethod
     def padding_mask(cls, sequences):
         """
         This is important as  Keeping the embedding of <pad> as a constant zero vector is sorta important.
         Therefore every sentence has diffrent length and we take care of that
         """
-        sequences = tf.cast(tf.math.equal(sequences, 0), tf.float64)
+        sequences = tf.cast(tf.math.equal(sequences, 0), tf.float32)
         return sequences[:, tf.newaxis, tf.newaxis, :]
 
+    @classmethod
     def create_all_mask(cls, seq_len, encoder_sequences, decoder_sequence):
         """
         For look ahead mask tf.maximum is important as the actual length might be 
         smaller than the sequence length and we dont want padding to influence our attention criteria.
-        For the very same reason we do masking for encoder and decoder 2nd attention layer too 
+        For the very same reason we do masking for encoder and decoder 2nd attention layer also 
         """
         encoder_padding_mask = cls.padding_mask(encoder_sequences)
-        decoder_padding_mask = cls.padding_mask(decoder_sequence)
+        decoder_padding_mask = cls.padding_mask(encoder_sequences)
+        look_ahead_mask_vector = tf.maximum(tf.cast(cls.look_ahead_mask(seq_len=seq_len), tf.float32),
+                                            cls.padding_mask(decoder_sequence))
 
-        look_ahead_mask = tf.maximum(cls.look_ahead_mask(seq_len=seq_len),
-                                     cls.padding_mask(sequences=decoder_sequence))
-
-        return encoder_padding_mask, look_ahead_mask, decoder_padding_mask
+        return encoder_padding_mask, look_ahead_mask_vector, decoder_padding_mask
 
 
 class Transformer(tf.keras.layers.Layer):
@@ -221,15 +223,15 @@ class Transformer(tf.keras.layers.Layer):
 
     def call(self, inputs, encoder_mask, decoder_mask, look_ahead_mask, decoder_input, training=False, **kwargs):
         inputs = self.encoder_embedding_layer(inputs)
-        for i in self.encoder_count:
+        for i in range(self.encoder_count):
             encoder_output = self.encoders[i](
-                inputs, mask=encoder_mask, training=training)
+                inputs, padding_mask=encoder_mask, training=training)
             inputs = encoder_output
-
         decoder_input = self.decoder_embedding_layer(decoder_input)
-        for i in self.decoder_count:
+        for i in range(self.decoder_count):
             decoder_output = self.decoders[i](
-                encoder_output, decoder_input, decoder_mask, look_ahead_mask, training=training)
+                encoder_output=encoder_output, inputs=decoder_input, padding_mask=decoder_mask, look_ahead_mask=look_ahead_mask, training=training)
+
             decoder_input = decoder_output
 
         return self.linear(decoder_output)

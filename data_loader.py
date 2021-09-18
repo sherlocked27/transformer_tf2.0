@@ -179,8 +179,3 @@ class Data_Loader:
             tf.data.experimental.AUTOTUNE)
 
         return dataset
-
-
-a = Data_Loader(os.getcwd() + '/data', 'wmt14/en-de',
-                data_limit=10000, batch_size=16)
-a.load()
